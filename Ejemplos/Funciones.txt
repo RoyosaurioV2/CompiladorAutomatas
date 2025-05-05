@@ -1,0 +1,23 @@
+# Funcion que no retorna nada
+Funcion Mostrar()
+	
+ Establecer Entero a;
+ Establecer Entero ;
+ Establecer Entero ;
+
+@FinFuncion Mostrar
+
+# Funcion que retorna
+Funcion Entero Sumar(Entero a, Entero b)
+
+   Retornar a + b;
+
+FinFuncion Sumar
+
+
+Inicio
+
+  Mostrar();;
+  Sumar(4, 6);
+  Leer hola mundo"";
+

@@ -1,0 +1,23 @@
+Inicio
+    # Valores fijos para demostrar optimización
+    = 15 @num1
+    = 10 @num2
+    = 5 @num3
+
+    # Operaciones constantes
+    + 3 5 t1          # Optimizable: 3+5=8
+    * t1 2 t2         # Optimizable: 8*2=16
+
+    # Comparaciones con constantes
+    > @num1 @num2 t3  # 15 > 10 → true
+    > @num1 @num3 t4  # 15 > 5 → true
+
+    # Expresión booleana constante
+    && true false t5   # Optimizable: false
+
+    # Bloque condicional con constante
+    IrSino t5 Fin      # Salto nunca tomado
+
+    = "Resultado final" t6
+    Esc t6
+Fin:

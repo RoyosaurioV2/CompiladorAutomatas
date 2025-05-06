@@ -1,0 +1,20 @@
+Inicio
+    # Condicional con expresión constante
+    Si (5 > 3) && (10 <= 20) Entonces  # Optimizable a "true"
+        = "Este bloque siempre se ejecuta" t1
+        Esc t1
+    Sino
+        = "Este bloque es código muerto" t2  # Será eliminado
+        Esc t2
+    FinSi
+
+    # Switch con casos constantes
+    Conforme 2 Hacer          # Valor constante
+        Caso 1:
+            = "Caso 1" t3
+        Caso 2:
+            = "Caso 2" t4     # Solo este bloque permanece
+        En otro caso:
+            = "Otro caso" t5  # Código muerto
+    FinConforme
+Fin

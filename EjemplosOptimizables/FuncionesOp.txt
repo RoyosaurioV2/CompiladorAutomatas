@@ -1,0 +1,14 @@
+Inicio
+    # Función con parámetros constantes
+    Funcion Entero Sumar(Entero a, Entero b)
+        Retornar a + b;  # Optimizable si a y b son constantes
+    FinFuncion
+
+    # Llamada optimizable
+    Sumar(4, 6);         # Se optimizará a = 10 t1
+
+    # Función con código muerto
+    Funcion Saludar()
+        = "Hola" t2      # Si no se usa, se elimina
+    FinFuncion
+Fin

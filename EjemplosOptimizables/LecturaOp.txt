@@ -1,0 +1,12 @@
+Inicio
+    # Parte optimizable
+    = 100 t1            # Constante
+    = t1 @edadTemporal
+
+    # Entrada real de usuario (no optimizable)
+    Escribir "Ingresa tu edad real: ";
+    Interpretar @edadReal;
+
+    # Operación con mezcla
+    + @edadTemporal 5 t2  # Optimizable parcialmente (= 105 t2)
+Fin

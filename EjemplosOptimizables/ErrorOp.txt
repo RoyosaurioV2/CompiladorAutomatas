@@ -1,0 +1,7 @@
+Inicio
+    # Expresión inválida (debería ser detectada)
+    = variableNoDeclarada t1  # Código muerto si t1 no se usa
+
+    # División por cero constante
+    / 10 0 t2                # Optimizable a "error"
+Fin

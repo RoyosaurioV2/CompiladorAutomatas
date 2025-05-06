@@ -1,53 +1,31 @@
 Inicio:
-	= "Programa que imprime el mayor de 3 numeros" t1
-	Esc t1
-	Est @num1
-	Est @num2
-	Est @num3
-	= "Dame el primer numero: " t2
-	Esc t2
-	Itr @num1
-	= "Dame el segundo numero: " t3
-	Esc t3
-	Itr @num2
-	= "Dame el tercer numero: " t4
-	Esc t4
-	Itr @num3
-	> @num1 @num2 t5
-	IrSino t5 Si_1
-	> @num1 @num3 t6
-	IrSino t6 Si_2
-	= "El primer numero es el mayor" t7
-	Esc t7
-Si_2:
-	= "El tercer numero es el mayor" t8
-	Esc t8
-Si_1:
-	> @num2 @num3 t9
-	IrSino t9 Si_3
-	= "El segundo numero es el mayor" t10
-	Esc t10
-Si_3:
-	= "El tercer numero es el mayor" t11
-	Esc t11
-	> @num1 @num2 t12
-	> @num1 @num3 t13
-	&& t12 t13 t14
-	IrSino t14 Si_4
-	= "El primer numero es el mayor" t15
-	Esc t15
-Si_4:
-	> @num2 @num3 t16
-	> @num2 @num1 t17
-	&& t17 t16 t18
-	IrSino t18 Si_5
-	= "El segundo numero es el mayor" t19
-	Esc t19
-Si_5:
-	> @num3 @num1 t20
-	> @num3 @num2 t21
-	&& t20 t21 t22
-	IrSino t22 Si_6
-	= "El tercero numero es el mayor" t23
-	Esc t23
-Si_6:
+    # Valores fijos para demostrar optimización
+    = 15 @num1
+    = 10 @num2
+    = 5 @num3
+
+    # Operaciones constantes
+    + 3 5 t1          # Optimizable: 3+5=8
+    * t1 2 t2         # Optimizable: 8*2=16
+
+    # Comparaciones redundantes
+    > @num1 @num2 t3  # 15 > 10 → true
+    > @num1 @num2 t4  # Redundante - misma comparación
+
+    # Código muerto potencial
+    = 100 t5          # Temporal no usado
+    = "Resultado: " t6
+    Esc t6
+
+    # Expresión booleana constante
+    && true false t7   # Optimizable: false
+
+    # Bloque condicional con constante
+    IrSino t7 Fin      # Salto nunca tomado
+
+    = "Este mensaje no aparece" t8
+    Esc t8
+
+Fin:
+    = "Fin del programa" t9
+    Esc t9

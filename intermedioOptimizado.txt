@@ -1,0 +1,12 @@
+Inicio
+Establecer Entero i;
+Para i = 0 Hasta que i <= 5 Con incremento 1
+= 5 t1
+* i 2 t2
+FinPara
+Mientras verdadero Hacer
+= "Este bucle se ejecuta una vez" t3
+Esc t3
+Romper;
+FinMientras
+Fin

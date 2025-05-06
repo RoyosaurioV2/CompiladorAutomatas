@@ -1,0 +1,15 @@
+Inicio
+    # Bucle con operación constante optimizable
+    Establecer Entero i;
+    Para i = 0 Hasta que i <= 5 Con incremento 1
+        + 2 3 t1       # Se optimizará a = 5 t1
+        * i 2 t2       # Solo optimizable si i es constante
+    FinPara
+
+    # Bucle con condición constante
+    Mientras verdadero Hacer
+        = "Este bucle se ejecuta una vez" t3
+        Esc t3
+        Romper;        # Permite optimizar el bucle infinito
+    FinMientras
+Fin

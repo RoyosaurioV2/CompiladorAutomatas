@@ -1,6 +1,8 @@
 # CompiladorAutomatas
 
 #Pasos para compilar
+
+
 javacc EC.jj para generar los archivos .java
 
 javac *.java para compilar todos los archivos .java y generar los archivos.class

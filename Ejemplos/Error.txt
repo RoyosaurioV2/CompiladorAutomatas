@@ -1,3 +1,0 @@
-Inicio
-  Escribir variableNoDeclarada;
-Fin

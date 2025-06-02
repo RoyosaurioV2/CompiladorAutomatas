@@ -1,0 +1,1345 @@
+options {
+    STATIC = false;
+    TOKEN_MANAGER_USES_PARSER = true;
+}
+
+PARSER_BEGIN(EC)
+
+import java.io.*;
+import java.util.*;
+
+public class EC { 
+
+    private final Integer[] COMIENZO_SENTENCIA = new Integer[] 
+    {
+        VARIABLE, ESTABLECER, INTERPRETAR, ESCRIBIR, INICIO_CONDICIONAL_SI, 
+        INICIO_CONDICIONAL_CONFORME, INICIO_CICLO_PARA, INICIO_CICLO_REPETIR, 
+        INICIO_CICLO_MIENTRAS
+    };
+
+    Compilador compilador;
+
+    public static void main(String[] args) {
+
+        String archivo = null;
+
+        if (args.length != 0) {
+            archivo = args[0];
+        }
+
+        Compilador c = new Compilador(archivo);
+
+        Reporte r = c.ejecutar();
+
+        System.out.println(r.toString());
+    }
+
+    public EC(Compilador compilador, InputStream stream) {
+        this(stream);
+
+        this.compilador = compilador;
+
+    }
+
+    private void errorSkip(Integer end, Integer... kinds) {
+
+        List<Integer> kindsList = Arrays.asList(kinds);
+
+        HashSet<Integer> cKinds = new HashSet<Integer>(kindsList);
+        cKinds.add(end);
+        cKinds.add(FIN_FUNCION);
+        cKinds.add(FIN);
+        cKinds.add(EOF);
+
+        Token oldToken = token;
+        boolean sw = true;
+        int selectedKind = EC.EOF;
+
+        do {
+            token = getNextToken();
+
+            for (Integer kind : cKinds) {
+                sw &= token.kind != kind;
+
+                if (!sw) {
+                    selectedKind = kind;
+                    break;
+                }
+            }
+
+        } while (sw);
+
+        if (selectedKind != end) {
+            token = oldToken;
+            jj_kind = selectedKind;
+        }
+
+    }
+
+}
+
+PARSER_END(EC)
+
+// Tokens
+
+// Inicio y fin del programa
+TOKEN : {
+
+    <INICIO: "Inicio">
+    |
+    <FIN: "Fin">
+
+}
+
+// Funciones
+TOKEN : {
+
+    <COMA: ",">
+    |
+    <FUNCION: "Funcion" >
+    |
+    <FIN_FUNCION: "FinFuncion">
+    |
+    <RETORNAR: "Retornar">
+}
+
+// Tipos de dato
+TOKEN : {
+
+    <ENTERO: ("Entero" | "entero")>
+    |
+    <FLOTANTE: ("Flotante" | "flotante")>
+    |
+    <CADENA: ("Cadena" | "cadena")>
+    |
+    <CARACTER: ("Caracter" | "caracter")>
+    |
+    <BOOLEANO: ("Booleano" | "booleano")>
+}
+
+// Escritura, Lectura y Definición de variables
+TOKEN : {
+    <INTERPRETAR: "Interpretar">
+    |
+    <ESCRIBIR: "Escribir">
+    |
+    <ESTABLECER: "Establecer">
+}
+
+// Operadores
+TOKEN : {
+    <ASIGNACION: "=">
+    |
+    <SUMA: "+">
+    |
+    <RESTA: "-">
+    |
+    <MULTIPLICACION: "*">
+    |
+    <DIVISION: "/">
+    |
+    <MODULO: "%">
+    |
+    <LOGICO_AND: "&&">
+    |
+    <LOGICO_OR: "||">
+    |
+    <LOGICO_NOT: "!">
+    |
+    <OPERADOR_IGUAL: "==">
+    |
+    <OPERADOR_DIFERENTE: "!=">
+    |
+    <OPERADOR_MAYOR: ">">
+    |
+    <OPERADOR_MENOR: "<">
+    |
+    <OPERADOR_MAYOR_IGUAL: ">=">
+    |
+    <OPERADOR_MENOR_IGUAL: "<=">
+    |
+    <OPERADOR_DOS_PUNTOS: ":">
+    |
+    <PAREN_ABIERTO: "(">
+    |
+    <PAREN_CERRADO: ")">
+    |
+    <INDICE_ABIERTO: "[">
+    |
+    <INDICE_CERRADO: "]">
+}
+
+// Constantes/Literales
+TOKEN : {
+    <#LETRA: ["a" - "z", "ñ"] | ["A" - "Z", "Ñ"]>
+    |
+    <#NUMERO: ["0" - "9"]>
+    |
+    <CADENA_TEXTO: "\"" ((~["\"","\\","\n","\r"]) | ("\\" ( ["n","t","b","r","f","\\","'","\""] ) ) )* "\"">
+    |
+    <CARACTER_TEXTO: "'" ((~["'","\\","\n","\r"]) | ("\\" ( ["n","t","b","r","f","\\","'","\""] ) ) ) "'">
+    |
+    <NUMERO_ENTERO: (<NUMERO>)+>
+    |
+    <NUMERO_DECIMAL: (<NUMERO>)+"."(<NUMERO>)+>
+    |
+    <BOOLEANO_FALSO: "Falso">
+    |
+    <BOOLEANO_VERDADERO: "Verdadero">
+    |
+    <DELIMITADOR: ";">
+
+}
+
+// Ciclos
+TOKEN : {
+    <INICIO_CICLO_PARA: "Para">
+    |
+    <CONDICION_CICLO_PARA: "Hasta que">
+    |
+    <INCREMENTO_CICLO_PARA: "Con incremento">
+    |
+    <FIN_CICLO_PARA: "FinPara">
+    |
+    <INICIO_CICLO_MIENTRAS: "Mientras">
+    |
+    <FIN_CICLO_MIENTRAS: "FinMientras">
+    |
+    <INICIO_CICLO_REPETIR: "Repetir">
+    |
+    <CONDICION_CICLO_REPETIR: "Finaliza cuando">
+}
+
+// Condicionales
+TOKEN : {
+    <INICIO_CONDICIONAL_SI:"Si">
+    |
+    <ENTONCES:"Entonces">
+    |
+    <CONDICIONAL_SINO:"Sino">
+    |
+    <FIN_CONDICIONAL_SI:"FinSi">
+    |
+    <INICIO_CONDICIONAL_CONFORME:"Conforme">
+    |
+    <CASO:"Caso">
+    |
+    <CASO_PREDETERMINADO:"En otro caso">
+    |
+    <FIN_CONFORME:"FinConforme">
+    |
+    <HACER : "Hacer">
+}
+
+//Variables
+TOKEN : {
+    <VARIABLE:(<LETRA> | "_")(<NUMERO> | <LETRA> | "_")*>
+}
+
+SKIP : {
+    " "
+    | "\t"
+    | "\r\n"
+    | "\n"
+    | <COMENTARIO: "#" (~["\r", "\n"])* ( ( "\r" )? "\n" | "\r")>
+
+}
+
+// Tokens invalidos
+TOKEN : {
+
+    <NUMERO_INVALIDO: (<NUMERO>)*("."( <NUMERO> | <LETRA> )* | <LETRA>)+>{
+
+        parser.compilador.addError(new ECError(ECError.Tipo.Lexico, 
+                            matchedToken.beginLine,
+                            matchedToken.beginColumn,
+                            "Se encontró un número inválido",
+                            String.format("'%s'", matchedToken.image),
+                            "Posible solución:",
+                            "Remover o revisar número"));
+
+    }
+    | <INVALIDO: ~[]>{
+
+        parser.compilador.addError(new ECError(ECError.Tipo.Lexico, 
+                            matchedToken.beginLine,
+                            matchedToken.beginColumn,
+                            "Se encontró símbolo inválido",
+                            String.format("'%s'", matchedToken.image),
+                            "Posible solución:",
+                            "Remover símbolo"));
+    }
+
+}
+
+// Gramaticas
+
+/**
+ * Gramática que representa algun tipo de dato permitido.
+ * 
+ * Ej: Entero, Cadena, Flotante, Caracter, Booleano 
+ * 
+ * @return Clase que representa un tipo de dato.
+ */
+TipoDato tipoDato() : { } {
+    ( 
+        <ENTERO>
+        |
+        <FLOTANTE>
+        |
+        <CADENA>
+        |
+        <CARACTER>
+        |
+        <BOOLEANO>
+    ) 
+    { 
+        return TipoDato.desdeInt(token.kind);
+    }
+}
+
+/**
+ *  Gramática que representa cualquiero valor constante de los diferentes tipos de dato.
+ * 
+ *  Ej: 123 (Entero), 1.213 (Flotante), "Str" (Cadena), 'c' (Caracter), Verdadero (Booleano)
+ * 
+ * @param bloque Representa el bloque actual. (Se usa para optimización)
+ * @return Clase que representa cualquier valor constante.
+ */
+ExpresionConstante constante(ExpresionBloque bloque) : 
+{
+    String str;
+    char ch;
+}
+{
+    <NUMERO_ENTERO>
+    {
+        return bloque.constante(Integer.parseInt(token.image), TipoDato.Entero);
+    }   // 2
+    |
+    <NUMERO_DECIMAL>
+    {
+        return bloque.constante(Double.parseDouble(token.image), TipoDato.Flotante);
+    }   // 2.3 0.0
+    |
+    <CADENA_TEXTO>
+    {
+        str = token.image.substring(1, token.image.length() - 1);
+        return bloque.constante(str, TipoDato.Cadena);
+    }   // "Hola"
+    |
+    <CARACTER_TEXTO>
+    {
+        str = token.image.substring(1, token.image.length() - 1);
+        ch = Assambly.unescape(str).charAt(0);
+        return bloque.constante(ch, TipoDato.Caracter);
+    }  // 'c'
+    |
+    <BOOLEANO_FALSO>
+    {
+        return bloque.constante(Boolean.FALSE, TipoDato.Booleano);
+    } // Falso
+    |
+    <BOOLEANO_VERDADERO>
+    {
+        return bloque.constante(Boolean.TRUE, TipoDato.Booleano);
+    }   // Verdadero
+}
+
+/**
+ * Gramática que representa cualquier expresión aritmetica, logica y relacionales o combinación de estas.
+ * 
+ * @param bloque Representa el bloque actual. Se usa para manejar los símbolos.
+ * @return Retorna la expresion, en caso de error retorna null.
+*/
+Expresion expresion(ExpresionBloque bloque) :
+{
+    Expresion exp;
+}
+{
+    exp = logicoOr(bloque)
+    {
+        return exp;
+    }
+}
+
+/**
+ * Gramática que representa una expresión con la presedencia del operador 'OR'. 
+ * 
+ * @param bloque Representa el bloque actual. Se usa para manejar los símbolos.
+ * @return Retorna la expresion, en caso de error retorna null.
+*/
+Expresion logicoOr(ExpresionBloque bloque) :
+{
+    Token op;
+    Expresion izq;
+    Expresion der;
+
+    Expresion resultado;
+}
+{
+    izq = logicoAnd(bloque)
+    {
+        resultado = izq;
+    }
+    (
+        op = <LOGICO_OR>
+        der = logicoAnd(bloque)
+        {
+
+            if (resultado != null && der != null) {
+
+                if (!(resultado.getTipoDato().puedeUtilizar(op.kind, false) && der.getTipoDato().puedeUtilizar(op.kind, false))) {
+                
+                    ECError error = new ECError(ECError.Tipo.Semantico, op.beginLine, op.beginColumn, 
+                        "No se puede aplicar el operador", "");
+    
+                    if (resultado.getTipoDato().equals(der.getTipoDato())) {
+                        error.addRazon("'%s' en tipo de dato \"%s\"", 
+                            op.image, resultado.getTipoDato());
+                    } else {
+                        error.addRazon("'%s' entre tipos de dato \"%s\" y \"%s\"", 
+                            op.image, resultado.getTipoDato(), der.getTipoDato());
+                    }
+                    
+                    compilador.addError(error);
+    
+                }
+
+            }
+
+            if (op.kind == ECConstants.LOGICO_OR) 
+                resultado = bloque.or(resultado, der);
+            else
+                resultado = null;
+
+        }
+    )*
+    {
+        return resultado;
+    }
+}
+
+/**
+ * Gramática que representa una expresión con la presedencia del operador 'AND'. 
+ * 
+ * @param bloque Representa el bloque actual. Se usa para manejar los símbolos.
+ * @return Retorna la expresion, en caso de error retorna null.
+*/
+Expresion logicoAnd(ExpresionBloque bloque) :
+{
+    Token op;
+    Expresion izq;
+    Expresion der;
+
+    Expresion resultado;
+}
+{
+    izq = comparacion(bloque)
+    {
+        resultado = izq;
+    }
+    (
+        op = <LOGICO_AND>
+        der = comparacion(bloque)
+        {
+
+            if (resultado != null && der != null) {
+
+                if (!(resultado.getTipoDato().puedeUtilizar(op.kind, false) && der.getTipoDato().puedeUtilizar(op.kind, false))) {
+                
+                    ECError error = new ECError(ECError.Tipo.Semantico, op.beginLine, op.beginColumn, 
+                        "No se puede aplicar el operador", "");
+    
+                    if (resultado.getTipoDato().equals(der.getTipoDato())) {
+                        error.addRazon("'%s' en tipo de dato \"%s\"", 
+                            op.image, resultado.getTipoDato());
+                    } else {
+                        error.addRazon("'%s' entre tipos de dato \"%s\" y \"%s\"", 
+                            op.image, resultado.getTipoDato(), der.getTipoDato());
+                    }
+
+                    compilador.addError(error);
+    
+                }
+
+            }
+
+            if (op.kind == ECConstants.LOGICO_AND) 
+                resultado = bloque.and(resultado, der);
+            else
+                resultado = null;
+
+        }
+
+    )*
+    {
+        return resultado;
+    }
+}
+
+/**
+ * Gramática que representa una expresión con la presedencia de los operadores relacionales. 
+ * 
+ * @param bloque Representa el bloque actual. Se usa para manejar los símbolos.
+ * @return Retorna la expresion, en caso de error retorna null.
+*/
+Expresion comparacion(ExpresionBloque bloque) : 
+{
+    Token op;
+    Expresion izq;
+    Expresion der;
+
+    Expresion resultado;
+}
+{
+    izq = operando(bloque)
+    {
+        resultado = izq;
+    }
+    (
+        ( 
+            op = <OPERADOR_IGUAL> | op = <OPERADOR_DIFERENTE> | op = <OPERADOR_MAYOR_IGUAL> 
+            | op = <OPERADOR_MENOR_IGUAL> | op = <OPERADOR_MAYOR> | op = <OPERADOR_MENOR> 
+        )
+        der = operando(bloque)
+        {
+            if (resultado != null && der != null) {
+
+                if (!(resultado.getTipoDato().puedeUtilizar(op.kind, false) && der.getTipoDato().puedeUtilizar(op.kind, false))) {
+                
+                    ECError error = new ECError(ECError.Tipo.Semantico, op.beginLine, op.beginColumn, 
+                        "No se puede aplicar el operador", "");
+
+                    if (resultado.getTipoDato().equals(der.getTipoDato())) {
+                        error.addRazon("'%s' en tipo de dato \"%s\"", 
+                            op.image, resultado.getTipoDato());
+                    } else {
+                        error.addRazon("'%s' entre tipos de dato \"%s\" y \"%s\"", 
+                            op.image, resultado.getTipoDato(), der.getTipoDato());
+                    }
+    
+                    compilador.addError(error);
+                }
+
+            }
+
+            if (op.kind == ECConstants.OPERADOR_IGUAL)
+                resultado = bloque.igual(resultado, der);
+            else if (op.kind == ECConstants.OPERADOR_DIFERENTE)
+                resultado = bloque.diferente(resultado, der);
+            else if (op.kind == ECConstants.OPERADOR_MAYOR_IGUAL)
+                resultado = bloque.mayorIgual(resultado, der);
+            else if (op.kind == ECConstants.OPERADOR_MENOR_IGUAL)
+                resultado = bloque.menorIgual(resultado, der);
+            else if (op.kind == ECConstants.OPERADOR_MAYOR)
+                resultado = bloque.mayor(resultado, der);
+            else if (op.kind == ECConstants.OPERADOR_MENOR)
+                resultado = bloque.menor(resultado, der);
+            else
+                resultado = null;
+
+
+        }
+    )?
+    {
+        return resultado;
+    }
+}
+
+/**
+ * Gramática que representa una expresión con la presedencia de los operadores aditivos (+ y -). 
+ * 
+ * @param bloque Representa el bloque actual. Se usa para manejar los símbolos.
+ * @return Retorna la expresion, en caso de error retorna null.
+*/
+Expresion operando(ExpresionBloque bloque) :
+{
+    Token op;
+    Expresion izq;
+    Expresion der;
+
+    Expresion resultado;
+}
+{
+    izq = termino(bloque)
+    {
+        resultado = izq;
+    }
+    (
+        ( op = <SUMA> | op = <RESTA> )
+        der = termino(bloque)
+        {
+
+            if (resultado != null && der != null) {
+
+                if (!(resultado.getTipoDato().puedeUtilizar(op.kind, false) && der.getTipoDato().puedeUtilizar(op.kind, false))) {
+                
+                    ECError error = new ECError(ECError.Tipo.Semantico, op.beginLine, op.beginColumn, 
+                        "No se puede aplicar el operador", "");
+    
+                    if (resultado.getTipoDato().equals(der.getTipoDato())) {
+                        error.addRazon("'%s' en tipo de dato \"%s\"", 
+                            op.image, resultado.getTipoDato());
+                    } else {
+                        error.addRazon("'%s' entre tipos de dato \"%s\" y \"%s\"", 
+                            op.image, resultado.getTipoDato(), der.getTipoDato());
+                    }
+    
+                    compilador.addError(error);
+                }
+
+            }
+
+            if (op.kind == ECConstants.SUMA) 
+                resultado = bloque.suma(resultado, der);
+            else if (op.kind == ECConstants.RESTA)
+                resultado = bloque.resta(resultado, der);
+            else
+                resultado = null;
+
+        }
+    )*
+    {
+        return resultado;
+    }
+}
+
+/**
+ * Gramática que representa una expresión con la presedencia de los operadores (*, / y %). 
+ * 
+ * @param bloque Representa el bloque actual. Se usa para manejar los símbolos.
+ * @return Retorna la expresion, en caso de error retorna null.
+*/
+Expresion termino(ExpresionBloque bloque) :
+{
+    Token op;
+    Expresion izq;
+    Expresion der;
+
+    Expresion resultado;
+}
+{
+    izq = factor(bloque)
+    {
+        resultado = izq;
+    }
+    (
+        ( op = <MULTIPLICACION> | op = <DIVISION> | op = <MODULO> )
+        der = factor(bloque)
+        {
+            
+            if (resultado != null && der != null) {
+
+                if (!(resultado.getTipoDato().puedeUtilizar(op.kind, false) && der.getTipoDato().puedeUtilizar(op.kind, false))) {
+                
+                    ECError error = new ECError(ECError.Tipo.Semantico, op.beginLine, op.beginColumn, 
+                        "No se puede aplicar el operador", "");
+                    
+                    if (resultado.getTipoDato().equals(der.getTipoDato())) {
+                        error.addRazon("'%s' en tipo de dato \"%s\"", 
+                            op.image, resultado.getTipoDato());
+                    } else {
+                        error.addRazon("'%s' entre tipos de dato \"%s\" y \"%s\"", 
+                            op.image, resultado.getTipoDato(), der.getTipoDato());
+                    }
+
+    
+                    compilador.addError(error);
+                }
+
+            }
+            
+            if (op.kind == ECConstants.MULTIPLICACION) 
+                resultado = bloque.multiplicacion(resultado, der);
+            else if (op.kind == ECConstants.DIVISION)
+                resultado = bloque.division(resultado, der);
+            else if (op.kind == ECConstants.MODULO)
+                resultado = bloque.modulo(resultado, der);
+            else
+                resultado = null;            
+
+        }
+    )* 
+    {
+        return resultado;
+    }
+}
+
+/**
+ * Gramática que representa todo lo que pueda ser un factor de una expresión (El lado derecho o izquierdo de una operación). 
+ * 
+ * @param bloque Representa el bloque actual. Se usa para manejar los símbolos.
+ * @return Retorna la expresion, en caso de error retorna null.
+*/
+Expresion factor(ExpresionBloque bloque) :
+{
+    Expresion izq;
+    Token op;
+}
+{
+    izq = accesoSimbolo(bloque) { return izq; }
+    |
+    izq = constante(bloque) { return izq; }
+    |
+    <PAREN_ABIERTO>
+    izq = expresion(bloque)
+    <PAREN_CERRADO>
+    { return izq; }
+    |
+    op = <LOGICO_NOT>
+    izq = factor(bloque)
+    {
+        
+        if (izq == null) return null;
+
+        if (!izq.getTipoDato().puedeUtilizar(op.kind, true)) {
+
+            ECError error = new ECError(ECError.Tipo.Semantico, op.beginLine, op.beginColumn, 
+            "No se puede aplicar el operador", "Solución:");
+
+            error.addRazon("'%s' en tipo de dato \"%s\"", op.image, izq.getTipoDato())
+                 .addSolucion("Solo el tipo de dato \"%s\" es compatible con el operador '%s'",
+                 TipoDato.Booleano, op.image);
+
+            compilador.addError(error);
+            
+            return null;
+        }
+
+        return bloque.not(izq);
+    }
+    |
+    ( op = <SUMA> | op = <RESTA> ) 
+    izq = factor(bloque)
+    {
+
+        if (izq == null) return null;
+
+        if (!izq.getTipoDato().puedeUtilizar(op.kind, true)) {
+
+            ECError error = new ECError(ECError.Tipo.Semantico, op.beginLine, op.beginColumn, 
+            "No se puede aplicar el operador unario", "Solución:");
+
+            error.addRazon("'%s' en tipo de dato \"%s\"", op.image, izq.getTipoDato())
+                 .addSolucion("Solo los tipos de dato \"%s\" y \"%s\" son compatibles con el operador unario '%s'",
+                 TipoDato.Entero, TipoDato.Flotante, op.image);
+
+            compilador.addError(error);
+            
+            return null;
+        }
+
+        if (op.kind == ECConstants.SUMA) 
+            return bloque.positivo(izq);
+        else if (op.kind == ECConstants.RESTA) 
+            return bloque.negativo(izq);
+        else
+            return null;
+    }
+}
+
+/**
+ * Gramática que representa la operación de asignación.
+ * 
+ * @param bloque Representa el bloque actual. Se usa para manejar los símbolos.
+ * @param izq Representa la expresión a la que se le va a asignar.
+ */
+ExpresionBinaria asignacion(ExpresionBloque bloque, ExpresionSimbolo izq) :
+{
+    Token op;
+
+    Expresion der;
+    
+}
+{
+    op = <ASIGNACION>
+    der = expresion(bloque)
+    {
+        if (izq == null || der == null) return null;
+
+        // der = bloque.optimizar(der);
+
+        if (!izq.getTipoDato().equals(der.getTipoDato())) {
+
+            ECError error = new ECError(ECError.Tipo.Semantico, op.beginLine, op.beginColumn, 
+            "No se puede asignar", "Se esperaba");
+
+            error.addRazon("tipo de dato \"%s\" a tipo de dato \"%s\"", der.getTipoDato(), izq.getTipoDato())
+                    .addSolucion("tipo de dato \"%s\"", izq.getTipoDato());
+
+            compilador.addError(error);
+
+            return null;
+        }
+
+        return bloque.asignacion(izq, der);
+    }
+}
+
+/**
+ * Gramática que representa toda expresión asignable, es decir, que se puede usar en una asignación.
+ * 
+ * @param bloque Representa el bloque actual. Se usa para manejar los símbolos.
+ * @return Si la expresión permite que se le asigne un valor, va a retornar esa expresión, si la expresión
+ * no se encuentrá en la tabla de símbolos del bloque o no es asignable, va a retornar null.
+ */
+ExpresionSimbolo asignable(ExpresionBloque bloque) :
+{
+    Token simbolo;
+    String nombre;
+}
+{
+    simbolo = <VARIABLE>
+    {
+        nombre = simbolo.image;
+
+        if (!bloque.existeSimbolo(nombre)) {
+
+            ECError error = new ECError(ECError.Tipo.Semantico, simbolo.beginLine, simbolo.beginColumn, 
+            "", "Solución:");
+
+            error.addRazon("El símbolo \"%s\" no está declarado en este ámbito", nombre)
+                .addSolucion("Declarar el símbolo");
+
+            compilador.addError(error);
+
+            return null;
+        }
+
+        return bloque.asignable(nombre);
+    }
+    // (
+    //     indiceArreglo(bloque)
+    // )?
+}
+
+/**
+ * Gramática que representa todo acceso a un símbolo, es decir, una variable, arreglo con indices, o la llamada de una funcion.
+ * 
+ * @param bloque Representa el bloque actual. Se usa para manejar los símbolos.
+ * @return Retorna la expresion del simbolo, si la expresión
+ * no se encuentrá en la tabla de símbolos del bloque o no el indice está mal o los argumentos no coinciden, 
+ * va a retornar null.
+ */
+Expresion accesoSimbolo(ExpresionBloque bloque) :
+{
+    Token simbolo;
+    String nombre;
+}
+{
+    simbolo = <VARIABLE>
+    {
+        nombre = simbolo.image;
+        
+        if (!bloque.existeSimbolo(nombre)) {
+
+            ECError error = new ECError(ECError.Tipo.Semantico, simbolo.beginLine, simbolo.beginColumn, 
+            "", "Solución:");
+
+            error.addRazon("El símbolo \"%s\" no está declarado en este ámbito", nombre)
+                .addSolucion("Declarar el símbolo");
+
+            compilador.addError(error);
+
+            return null;
+        }
+
+        return bloque.variable(simbolo.image);
+    }
+    /*(
+        indiceArreglo(bloque)
+        |
+        argumentosFuncion(bloque)
+    )?*/
+}
+
+/**
+ * Gramática que representa lo que se necesita para que se haga una asignación.
+ * 
+ * Nota: Se usa para usarse en gramáticas que necesitan la asignación pero sin el delimitador.
+ * 
+ * @param bloque Representa el bloque actual. Se usa para manejar los símbolos.
+ */
+ExpresionBinaria asignacionCompleta(ExpresionBloque bloque) : 
+{
+    ExpresionSimbolo izq;
+    ExpresionBinaria resultado;
+}
+{
+    izq = asignable(bloque)
+    resultado = asignacion(bloque, izq)
+    {
+        return resultado;
+    }
+}
+
+/**
+ * Gramática que representa lo que se necesita para que se haga una declaración de variable o de un arreglo.
+ * 
+ * Nota: Se usa para usarse en gramáticas que necesitan la declaración pero sin el delimitador.
+ * 
+ * @param bloque Representa el bloque actual. Se usa para manejar los símbolos.
+ */
+ExpresionDeclaracion declaracionCompleta(ExpresionBloque bloque) :
+{
+    TipoDato tipoDato;
+    Token simbolo;
+    String nombre;
+
+    ExpresionSimbolo izq;
+
+    ExpresionBinaria asig = null;
+}
+{
+    <ESTABLECER> 
+    tipoDato = tipoDato()
+    simbolo = <VARIABLE>
+    {
+
+        nombre = simbolo.image;
+        if (bloque.existeSimbolo(nombre)) {
+
+            ECError error = new ECError(ECError.Tipo.Semantico, simbolo.beginLine, simbolo.beginColumn, 
+            "", "Solución:");
+
+            error.addRazon("El símbolo \"%s\" ya está declarado en este ámbito", nombre)
+                .addSolucion("Quitar declaración doble");
+
+            compilador.addError(error);
+
+            izq = null;
+        }
+        else {
+            izq = bloque.variable(nombre, tipoDato);
+        }
+
+    }
+    ( 
+        asig = asignacion(bloque, izq)
+    )?
+    {
+        if (izq == null) return null;
+        
+        return bloque.declaracion(izq, asig);
+    }
+}
+
+/**
+ * Gramática que representa la sentencia completa de declaración.
+ * 
+ * @param bloque Representa el bloque actual. Se usa para manejar los símbolos.
+ */
+ExpresionDeclaracion sentenciaDeclaracion(ExpresionBloque bloque) :
+{
+    ExpresionDeclaracion dec;
+}
+{
+    try {
+        dec = declaracionCompleta(bloque)
+        <DELIMITADOR>
+        {
+            return dec;
+        }
+        
+    } catch (ParseException ex) {
+        compilador.addError(ECError.fromParseException(ex));
+        errorSkip(DELIMITADOR, COMIENZO_SENTENCIA);
+        
+        return null;
+    } 
+    
+}
+
+/**
+ * Gramática que representa la sentencia completa de asignación.
+ * 
+ * @param bloque Representa el bloque actual. Se usa para manejar los símbolos.
+ */
+ExpresionBinaria sentenciaAsignacion(ExpresionBloque bloque) : 
+{
+    ExpresionBinaria asig;
+}
+{
+    try {
+        asig = asignacionCompleta(bloque) 
+        <DELIMITADOR>
+        {
+            return asig;
+        }
+    } catch(ParseException ex) {
+        compilador.addError(ECError.fromParseException(ex));
+        errorSkip(DELIMITADOR, COMIENZO_SENTENCIA);
+        return null;
+    }
+}
+
+/**
+ * Gramática que representa cuando se pide un dato al usuario.
+ * 
+ * @param bloque Representa el bloque actual. Se usa para manejar los símbolos.
+ * @return La expresión que representa esa operación.
+ */
+ExpresionUnaria leerDato(ExpresionBloque bloque) :
+{
+    ExpresionSimbolo simbolo;
+}
+{
+    try {
+        <INTERPRETAR>
+        simbolo = asignable(bloque)
+        <DELIMITADOR>
+        {
+
+            if (simbolo == null) return null;
+
+            return bloque.interpretar(simbolo);
+        }
+    } catch (ParseException ex) {
+        compilador.addError(ECError.fromParseException(ex));
+        errorSkip(DELIMITADOR, COMIENZO_SENTENCIA);
+        return null;
+    }
+
+}
+
+/**
+ * Gramática que representa la sentencia de imprimir un dato.
+ * 
+ * @param bloque Representa el bloque actual. Se usa para manejar los símbolos.
+ * @return La expresión que representa esa operación.
+ */
+ExpresionUnaria imprimirDato(ExpresionBloque bloque) :
+{
+    Expresion exp;
+}
+{
+    try {
+        <ESCRIBIR>
+        exp = expresion(bloque)
+        <DELIMITADOR>
+        {
+            if (exp == null) return null;
+            
+            // exp = bloque.optimizar(exp);
+
+            return bloque.imprimir(exp);
+        }
+    } catch (ParseException ex) {
+        compilador.addError(ECError.fromParseException(ex));
+        errorSkip(DELIMITADOR, COMIENZO_SENTENCIA);
+        return null;
+    }
+}
+
+Expresion sentenciaSi(ExpresionBloque bloque) :
+{
+    Expresion condicion;
+    ExpresionBloque bloqueVerdadero;
+    ExpresionBloque bloqueFalso = null;
+}
+{
+    try {
+        <INICIO_CONDICIONAL_SI>
+        condicion = expresion(bloque)
+        {
+            bloqueVerdadero = bloque.bloque();
+
+            if (condicion != null) {
+
+                // condicion = bloque.optimizar(condicion);
+
+                if (!condicion.getTipoDato().equals(TipoDato.Booleano)) {
+
+                    ECError error = new ECError(ECError.Tipo.Semantico, token.beginLine, token.beginColumn, 
+                            "La expresión del condicional \"Si\" debe ser tipo de dato", "");
+        
+                    error.addRazon("\"%s\"", TipoDato.Booleano);
+    
+                    compilador.addError(error);
+                }
+
+            }   
+            
+        }
+        <ENTONCES>
+        ( sentencia(bloqueVerdadero) )*
+        (
+            <CONDICIONAL_SINO>
+            {
+                bloqueFalso = bloque.bloque();
+            }
+            ( sentencia(bloqueFalso) )*
+        )?
+        <FIN_CONDICIONAL_SI>
+        {
+            return bloque.condicional(condicion, bloqueVerdadero, bloqueFalso);
+        }
+    } catch (ParseException ex) {
+        compilador.addError(ECError.fromParseException(ex));
+        errorSkip(FIN_CONDICIONAL_SI);
+
+        return null;
+    }
+}
+
+Expresion sentenciaMientras(ExpresionBloque bloque) : 
+{
+    Expresion condicion;
+
+    ExpresionBloque bloqueMientras;
+
+    TreeSet<Expresion> noOptimizar;
+}
+{
+    try {
+        <INICIO_CICLO_MIENTRAS>
+        condicion = expresion(bloque) 
+        {
+            noOptimizar = bloque.getSimbolos(condicion);
+
+            bloqueMientras = bloque.bloque(noOptimizar);
+
+            if (condicion != null) {
+
+                if (!condicion.getTipoDato().equals(TipoDato.Booleano)) {
+
+                    ECError error = new ECError(ECError.Tipo.Semantico, token.beginLine, token.beginColumn, 
+                            "La expresión del ciclo \"Mientras\" debe ser tipo de dato", "");
+        
+                    error.addRazon("\"%s\"", TipoDato.Booleano);
+    
+                    compilador.addError(error);
+                }
+
+            }
+            
+        }
+        <HACER>
+        ( sentencia(bloqueMientras) )*
+        <FIN_CICLO_MIENTRAS>
+        {
+
+            var resultado = bloque.cicloMientras(condicion, bloqueMientras);
+
+            if (resultado.getTipoExpresion().equals(Expresion.Tipo.CicloMientras)) {
+
+                var mientras = (ExpresionCicloMientras) resultado;
+
+                if (mientras.esInfinito()) {
+
+                    ECError error = new ECError(ECError.Tipo.Semantico, token.beginLine, token.beginColumn, 
+                            "Cuidado:", "Solución:");
+        
+                    error.addRazon("Ciclo infinito")
+                         .addSolucion("Revisar condición del ciclo");
+    
+                    compilador.addError(error);
+
+                    return null;
+                }
+
+            }
+
+            return resultado;
+        }
+    } catch (ParseException ex) {
+        compilador.addError(ECError.fromParseException(ex));
+        errorSkip(FIN_CICLO_MIENTRAS);
+
+        return null;
+    }
+}
+
+Expresion sentencia(ExpresionBloque bloque) :
+{
+    Expresion sentencia;
+}
+{
+    (
+        sentencia = sentenciaDeclaracion(bloque) |
+        sentencia = sentenciaAsignacion(bloque) |
+        sentencia = leerDato(bloque) |
+        sentencia = imprimirDato(bloque) |
+        sentencia = sentenciaSi(bloque) | 
+        sentencia = sentenciaMientras(bloque)
+    )
+    {
+        if (sentencia != null)
+            sentencia.addTo(bloque);
+            
+        return sentencia;
+    }
+}
+
+void programa(ExpresionBloque bloquePrograma) : 
+{
+    
+}
+{
+
+    try {
+        // Nuevo
+        /* ( declaracionFuncion(bloquePrograma) )* */
+        <INICIO> 
+        ( sentencia(bloquePrograma) )+
+        <FIN>
+        <EOF>
+
+    } catch (ParseException ex){
+        compilador.addError(ECError.fromParseException(ex));
+        errorSkip(FIN_FUNCION);
+    }
+
+}
+
+// No implementados
+
+/**
+ * Gramática que representa la declaración de una función.
+ * 
+ * ELIMINADO
+ * 
+ * @param bloque Representa el bloque actual. Se usa para manejar los símbolos.
+ * @return La expresion que representa la funcion con argumentos y cuerpo.
+ */
+ExpresionFuncion declaracionFuncion(ExpresionBloque bloque) :
+{
+
+}
+{
+    <FUNCION>
+    (
+        tipoDato()
+    )?
+    <VARIABLE>
+    declaracionArgumentos(bloque)
+    /*(
+        // sentencias(bloque)
+    )**/
+    (
+        <RETORNAR>
+        expresion(bloque)
+        <DELIMITADOR>
+    )?
+    <FIN_FUNCION>
+    <VARIABLE>
+    {
+        return null;
+    }
+}
+
+/**
+ * Gramática que representa los indices de un arreglo, tanto los indices de declaración como los de acceso.
+ * 
+ * ELIMINADO
+ * 
+ * @param bloque Representa el bloque actual. Se usa para manejar los símbolos.
+ * @return La expresión de indice de un arreglo.
+ */
+ExpresionIndice indiceArreglo(ExpresionBloque bloque) :
+{
+
+}
+{
+    (
+        <INDICE_ABIERTO>
+        expresion(bloque)
+        <INDICE_CERRADO>
+    )+
+    {
+        return null;
+    }
+}
+
+/**
+ * Gramática que representa un tipo de dato simple o de arreglo.
+ * 
+ * ELIMINADO
+ * 
+ * @param bloque Representa el bloque actual. Se usa para manejar los símbolos.
+ * @return La expresión del tipo de dato.
+ */
+ExpresionIndice tipoDatoCompleto(ExpresionBloque bloque) :
+{
+
+}
+{
+    tipoDato()                  
+    // (                           
+    //     indiceArreglo(bloque)   
+    // )?
+    { return null; }
+}
+
+/**
+ * Gramática que representa los argumentos de una llamada de función.
+ * 
+ * ELIMINADO
+ * 
+ * @param bloque Representa el bloque actual. Se usa para manejar los símbolos.
+ * @return La lista de argumentos de la llamada.
+ */
+List<Expresion> argumentosFuncion(ExpresionBloque bloque) :
+{
+
+}
+{
+    <PAREN_ABIERTO>
+    (
+        expresion(bloque)
+        (
+            <COMA>
+            expresion(bloque)
+        )*
+    )?
+    <PAREN_CERRADO>
+    {
+        return null;
+    }
+}
+
+/**
+ * Gramática que representa la declaración de argumentos de una función.
+ * 
+ * ELIMINADO
+ * 
+ * @param bloque Representa el bloque actual. Se usa para manejar los símbolos.
+ * @return La lista de argumentos de la funcion.
+ */
+List<Expresion> declaracionArgumentos(ExpresionBloque bloque) :
+{
+
+}
+{
+    <PAREN_ABIERTO>
+    (
+        expresion(bloque)
+        (
+            <COMA>
+            expresion(bloque)
+        )*
+    )?
+    <PAREN_CERRADO>
+    { return null; }
+}
+
+/**
+ * Gramática que representa la operación de asignación de variables.
+ * 
+ * ELIMINADO
+ * 
+ * Nota: Se usa en el ciclo Para.
+ * 
+ * @param bloque Representa el bloque actual. Se usa para manejar los símbolos.
+ */
+void asignacionVariable(ExpresionBloque bloque) : 
+{
+
+}
+{
+    <VARIABLE>
+    /*( 
+        asignacion(bloque, izq)
+    )?*/
+}

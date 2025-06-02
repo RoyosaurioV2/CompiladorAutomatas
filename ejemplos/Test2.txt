@@ -1,0 +1,15 @@
+Inicio
+
+    Establecer Entero c1 = 5;
+    Establecer Entero c2 = -c1;
+
+    Escribir "Hola";
+
+    Establecer Booleano sw = c1 > 'B' && c1 < 'Z';
+    Interpretar sw;
+
+    Escribir !sw;
+
+    Establecer Booleano b1 = Verdadero;
+    Establecer Booleano b2 = b1;
+Fin

@@ -1,0 +1,14 @@
+Inicio
+    Establecer Entero numero1 = 10;
+
+    Establecer Entero numero2 = -5;
+
+    Si numero1 > numero2 Entonces
+        Escribir "Numero 1 es mayor que Numero 2";
+    Sino
+        Escribir "Numero 2 es mayor que Numero 1";
+    FinSi
+
+    Escribir '\n';
+
+Fin

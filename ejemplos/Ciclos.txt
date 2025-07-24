@@ -1,1 +1,14 @@
+Inicio
 
+    Establecer Entero i;
+
+    Establecer Entero numero = 0;
+
+    Mientras numero < 10 Hacer
+        # Codigo
+        Escribir numero;
+        Escribir '\n';
+        numero = numero + 1;
+    FinMientras
+
+Fin
